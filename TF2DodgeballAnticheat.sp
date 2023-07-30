@@ -41,7 +41,6 @@ public void OnPluginStart()
 	if (!TFDB_IsDodgeballEnabled()) return;
 
 	TFDB_OnRocketsConfigExecuted();
-
 }
 
 public void TFDB_OnRocketsConfigExecuted()
@@ -49,7 +48,6 @@ public void TFDB_OnRocketsConfigExecuted()
 	if (g_bLoaded) return;
 
 	HookEvent("object_deflected", RocketDeflected);
-
 	g_bLoaded = true;
 }
 
@@ -59,7 +57,6 @@ public void OnMapEnd()
 		return;
 
 	UnhookEvent("object_deflected", RocketDeflected);
-
 	g_bLoaded = false;
 }
 
@@ -70,7 +67,6 @@ public void OnClientPutInServer(int iClient)
 
 public Action OnPlayerRunCmdPre(int iClient, int iButtons)
 {
-
 	if (IsFakeClient(iClient) || !IsPlayerAlive(iClient))
 		return Plugin_Continue;
 	
@@ -82,19 +78,16 @@ public Action OnPlayerRunCmdPre(int iClient, int iButtons)
 
 public void RocketDeflected(Event hEvent, char[] strEventName, bool bDontBroadcast)
 {
-
 	int iClient = GetClientOfUserId(hEvent.GetInt("userid"));
 
 	if (!IsClientInGame(iClient) || IsFakeClient(iClient))
 		return;
 
 	g_iTickLastDeflect[iClient] = GetGameTickCount();
-
 }
 
 void CheckTriggerbot(int iClient, int iButtons)
 {
-	
 	if (iButtons & IN_ATTACK2)
 	{
 		g_iTicksHeld[iClient]++;
@@ -124,10 +117,8 @@ void CheckTriggerbot(int iClient, int iButtons)
 				Format(buffer, sizeof(buffer), "[TFDB Anticheat] Triggerbot detected: %N (%s)", iClient, steamid);
 				LogDetection(buffer);
 			}
-
 			g_iTrackNext[iClient] += g_Cvar_TriggerbotTrackNextHits.IntValue;
 		}
-
 		g_iTicksHeld[iClient] = 0;
 	}
 }
