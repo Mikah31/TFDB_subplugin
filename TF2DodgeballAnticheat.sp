@@ -9,7 +9,7 @@
 #define PLUGIN_NAME        "[TFDB] Simple anticheat"
 #define PLUGIN_AUTHOR      "Mikah"
 #define PLUGIN_DESCRIPTION "Detects TF2 Dodgeball triggerbots"
-#define PLUGIN_VERSION     "1.0.0"
+#define PLUGIN_VERSION     "1.1.0"
 #define PLUGIN_URL         "https://github.com/Mikah31/TFDB_subplugin"
 
 public Plugin myinfo =
