@@ -9,7 +9,7 @@
 #define PLUGIN_NAME        "[TFDB] Simple anticheat"
 #define PLUGIN_AUTHOR      "Mikah"
 #define PLUGIN_DESCRIPTION "Detects TF2 Dodgeball triggerbots"
-#define PLUGIN_VERSION     "1.0.0"
+#define PLUGIN_VERSION     "1.1.0"
 #define PLUGIN_URL         "https://github.com/Mikah31/TFDB_subplugin"
 
 public Plugin myinfo =
@@ -22,7 +22,6 @@ public Plugin myinfo =
 };
 
 ConVar g_Cvar_TriggerbotEnable;
-ConVar g_Cvar_TriggerbotTrackNextHits;
 
 bool  g_bLoaded;
 
@@ -33,7 +32,6 @@ int g_iTickLastDeflect [MAXPLAYERS + 1];
 public void OnPluginStart()
 {
 	g_Cvar_TriggerbotEnable = CreateConVar("tfdb_triggerbot", "1", "Enable/disable TFDB triggerbot detection", _, true, 0.0, true, 1.0);
-	g_Cvar_TriggerbotTrackNextHits = CreateConVar("tfdb_anticheat_track_hits", "4", "How many hits we should log after triggerbot detection to check for patterns", _, true, 0.0);
 
 	for (int i = 1; i <= MaxClients; i++)
 		SetDefault(i);
@@ -53,8 +51,7 @@ public void TFDB_OnRocketsConfigExecuted()
 
 public void OnMapEnd()
 {
-	if (!g_bLoaded)
-		return;
+	if (!g_bLoaded) return;
 
 	UnhookEvent("object_deflected", RocketDeflected);
 	g_bLoaded = false;
@@ -94,30 +91,12 @@ void CheckTriggerbot(int iClient, int iButtons)
 	}
 	else if (g_iTicksHeld[iClient] != 0)
 	{
-		// Only track fresh hits
-		int iTickCountSinceLastDeflect = GetGameTickCount() - g_iTickLastDeflect[iClient];
-
-		// Log next hits after a detection
-		if (g_iTrackNext[iClient] > 0 && iTickCountSinceLastDeflect < 50)
-		{
-			char buffer[256];
-			Format(buffer, sizeof(buffer), "[TFDB Anticheat] %N Ticks held: %i", iClient, g_iTicksHeld[iClient]);
-			LogDetection(buffer);
-
-			g_iTrackNext[iClient]--;
-		}
-
 		if (g_iTicksHeld[iClient] == 1 && iTickCountSinceLastDeflect < 50)
 		{
-			// Triggerbot was detected
-			if (g_iTrackNext[iClient] == 0) // Prevent double logging 1 tick hits
-			{
-				char buffer[256], steamid[64];
-				GetClientAuthId(iClient, AuthId_Steam2, steamid, sizeof(steamid));
-				Format(buffer, sizeof(buffer), "[TFDB Anticheat] Triggerbot detected: %N (%s)", iClient, steamid);
-				LogDetection(buffer);
-			}
-			g_iTrackNext[iClient] += g_Cvar_TriggerbotTrackNextHits.IntValue;
+			char buffer[256], steamid[64];
+			GetClientAuthId(iClient, AuthId_Steam2, steamid, sizeof(steamid));
+			Format(buffer, sizeof(buffer), "[TFDB Anticheat] Triggerbot detected: %N (%s)", iClient, steamid);
+			LogDetection(buffer);
 		}
 		g_iTicksHeld[iClient] = 0;
 	}
