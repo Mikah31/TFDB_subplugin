@@ -9,7 +9,7 @@
 #define PLUGIN_NAME        "[TFDB] Simple anticheat"
 #define PLUGIN_AUTHOR      "Mikah"
 #define PLUGIN_DESCRIPTION "Detects TF2 Dodgeball triggerbots"
-#define PLUGIN_VERSION     "1.2.0"
+#define PLUGIN_VERSION     "1.2.1"
 #define PLUGIN_URL         "https://github.com/Mikah31/TFDB_subplugin"
 
 public Plugin myinfo =
@@ -25,12 +25,12 @@ ConVar g_Cvar_TriggerbotEnable;
 
 bool  g_bLoaded;
 
-int g_iTicksHeld       [MAXPLAYERS + 1];
-int g_iTickLastDeflect [MAXPLAYERS + 1];
+int g_iTicksHeld           [MAXPLAYERS + 1];
+float g_fEngineTimeDeflect [MAXPLAYERS + 1];
 
-int g_iTotalDeflects   [MAXPLAYERS + 1]; // n
-float g_fTickMean      [MAXPLAYERS + 1]; // 𝜇
-float g_fTickStd       [MAXPLAYERS + 1]; // σ, we are most likely under estimating true value for std
+int g_iTotalDeflects       [MAXPLAYERS + 1]; // n
+float g_fTickMean          [MAXPLAYERS + 1]; // 𝜇
+float g_fTickStd           [MAXPLAYERS + 1]; // σ, we are most likely under estimating true value for std
 
 
 public void OnPluginStart()
@@ -91,7 +91,7 @@ public void RocketDeflected(Event hEvent, char[] strEventName, bool bDontBroadca
 		return;
 
 	g_iTotalDeflects[iClient] += 1;
-	g_iTickLastDeflect[iClient] = GetGameTickCount();
+	g_fEngineTimeDeflect[iClient] = GetEngineTime();
 }
 
 void CheckTriggerbot(int iClient, int iButtons)
@@ -103,11 +103,12 @@ void CheckTriggerbot(int iClient, int iButtons)
 	}
 	else if (g_iTicksHeld[iClient] > 0)
 	{
-		int iTickCountSinceLastDeflect = (GetGameTickCount() - g_iTickLastDeflect[iClient]);
+		float fEngineTimeSinceLastDeflect = (GetEngineTime() - g_fEngineTimeDeflect[iClient]);
 
 		// Only track after rocket has been hit
-		if (iTickCountSinceLastDeflect > 50 || iTickCountSinceLastDeflect < 0)
+		if (fEngineTimeSinceLastDeflect > 50 || fEngineTimeSinceLastDeflect < 0)
 		{
+			g_fEngineTimeDeflect[iClient] = 0.0;
 			g_iTicksHeld[iClient] = 0;
 			return;
 		}
@@ -130,19 +131,19 @@ void CheckTriggerbot(int iClient, int iButtons)
 		else
 			g_fTickMean[iClient] = (g_fTickMean[iClient]*(g_iTotalDeflects[iClient]-1.0)+g_iTicksHeld[iClient])/g_iTotalDeflects[iClient];
 
-		// Detection for 2 tick hits
-		if (g_iTicksHeld[iClient] <= 2 && g_iTicksHeld[iClient] > 0)
+		// Triggerbot detection component
+		if (g_iTicksHeld[iClient] == 1)
 		{
-			LogDetection(iClient, iTickCountSinceLastDeflect);
+			LogDetection(iClient, fEngineTimeSinceLastDeflect);
 		}
 
 		// Reset ticks since last deflect to only count first successful airblast
 		g_iTicksHeld[iClient] = 0;
-		g_iTickLastDeflect[iClient] = 0;
+		g_fEngineTimeDeflect[iClient] = 0.0;
 	}
 }
 
-void LogDetection(int iClient, int iTickCountSinceLastDeflect)
+void LogDetection(int iClient, float fEngineTimeLastDeflect)
 {
 	if (!IsClientInGame(iClient) || IsFakeClient(iClient))
 		return;
@@ -153,7 +154,7 @@ void LogDetection(int iClient, int iTickCountSinceLastDeflect)
 
 	FormatTime(date, sizeof(date), "%Y/%m/%d %I:%M:%S", GetTime());
 	GetClientAuthId(iClient, AuthId_Steam2, steamid, sizeof(steamid));
-	Format(buffer, sizeof(buffer), "%s %N (%s): u=%.2f, s=%.2f, total_hits=%d, ticksheld=%d, server_gameticks=%d", date, iClient, steamid, g_fTickMean[iClient], g_fTickStd[iClient], g_iTotalDeflects[iClient], g_iTicksHeld[iClient], iTickCountSinceLastDeflect);
+	Format(buffer, sizeof(buffer), "%s %N (%s): u=%.2f, s=%.2f, total_hits=%d, ticksheld=%d, engine_ticks=%.2f", date, iClient, steamid, g_fTickMean[iClient], g_fTickStd[iClient], g_iTotalDeflects[iClient], g_iTicksHeld[iClient], fEngineTimeLastDeflect);
 	
 	WriteFileLine(logFile, buffer);
 
@@ -184,7 +185,7 @@ public Action CMDgaussianStats(int iClient, int iArgs)
 void SetDefault(int iClient)
 {	
 	g_iTicksHeld[iClient] = 0;
-	g_iTickLastDeflect[iClient] = 0;
+	g_fEngineTimeDeflect[iClient] = 0.0;
 	g_iTotalDeflects[iClient] = 0;
 	g_fTickMean[iClient] = 0.0;
 	g_fTickStd[iClient] = 0.0;
