@@ -6,4 +6,5 @@ Automatically detecting auto reflect cheats in the TFDB gamemode.
 There are currently many false detections, gathering more data to see if there is a possibility of reducing these false positives.
 
 ### In game commands
-"/gaussianstats": Retrieves the mean, standard deviation & total deflections of a player, used for testing purposes
+"/gaussianstats": Retrieves the mean, standard deviation & total deflections of a player, used for testing purposes.
+"/trackdeflects (clientID)": Tracks players deflects & outputs to trackers console. If no args are given display list of clientID's & names.
